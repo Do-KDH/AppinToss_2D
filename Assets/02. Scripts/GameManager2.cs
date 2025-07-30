@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections; // 코루틴 사용을 위해 추가
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -15,10 +16,12 @@ public class GameManager2 : MonoBehaviour
     public GameObject gameOverPanel;
 
     public RandomCreate randomCreateRef;
-    //public Button resetButton;
-    public GameObject randomCreatePrefab;   // 프리팹 참조 (Inspector에서 넣기)
+    public GameObject randomCreatePrefab;
     private GameObject randomCreateInstance;
-    //private bool resetTrigger;
+        
+    public Animator resetAnimator;
+    public AnimationClip resetAnimation;
+    private bool isResetting = false;
 
     void Start()
     {
@@ -35,7 +38,6 @@ public class GameManager2 : MonoBehaviour
                 randomCreateRef = randomCreateInstance.GetComponent<RandomCreate>();
             }
         }
-        //resetButton.onClick.AddListener(() => resetTrigger = true);
     }
 
     void Update()
@@ -45,22 +47,35 @@ public class GameManager2 : MonoBehaviour
 
         CheckAnswer();
 
-        if (CanCheckRemainingSequences())
+        if (CanCheckRemainingSequences() && !isResetting)
         {
             randomCreateRef.InitializeCurrentActiveGrid();
 
             if (randomCreateRef.HasNoRemainingSequences())
-            {
-                Debug.Log("리셋 로직 실행");
-                randomCreateRef.ResetGrid();
-            }
-            //else if (randomCreateRef.HasNoRemainingSequences())
-            //{
-            //    Debug.Log("리셋 버튼을 눌러주세요");
-            //}
+                StartCoroutine(PlayResetAnimationAndResetGrid());
         }
     }
 
+    private IEnumerator PlayResetAnimationAndResetGrid()
+    {
+        isResetting = true;
+        Debug.Log("리셋 애니메이션 시작");
+
+        if (resetAnimator != null)
+        {
+            resetAnimator.SetTrigger("StartReset");
+        }
+        float animationLength = (resetAnimation != null) ? resetAnimation.length : 1.0f;
+        yield return new WaitForSeconds(animationLength);
+
+        Debug.Log("리셋 로직 실행");
+        if (randomCreateRef != null)
+        {
+            randomCreateRef.ResetGrid();
+        }
+
+        isResetting = false;
+    }
     void UpdateTimer()
     {
         timeLeft -= Time.deltaTime;
@@ -119,7 +134,4 @@ public class GameManager2 : MonoBehaviour
         successObj = true;
         matList.Clear();
     }
-
-
-
 }
